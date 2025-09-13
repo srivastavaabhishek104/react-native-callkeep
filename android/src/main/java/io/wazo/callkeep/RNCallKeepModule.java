@@ -1080,25 +1080,40 @@ public class RNCallKeepModule extends ReactContextBaseJavaModule implements Life
     public void backToForeground() {
         Context context = getAppContext();
         if (context == null) {
-            Log.w(TAG, "[RNCallKeepModule][backToForeground] no react context found.");
+            Log.w(TAG, "[RNCallKeepModule][backToForeground] no app context found.");
             return;
         }
+    
         String packageName = context.getApplicationContext().getPackageName();
-        Intent focusIntent = context.getPackageManager().getLaunchIntentForPackage(packageName).cloneFilter();
+        Intent focusIntent = context.getPackageManager().getLaunchIntentForPackage(packageName);
+    
+        if (focusIntent == null) {
+            Log.w(TAG, "[RNCallKeepModule][backToForeground] launch intent not found for package: " + packageName);
+            return;
+        }
+    
+        // Ensure we create a fresh instance
+        focusIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+    
         Activity activity = getCurrentReactActivity();
         boolean isOpened = activity != null;
-        Log.d(TAG, "[RNCallKeepModule] backToForeground, app isOpened ?" + (isOpened ? "true" : "false"));
-
+        Log.d(TAG, "[RNCallKeepModule] backToForeground, app isOpened ? " + (isOpened ? "true" : "false"));
+    
         if (isOpened) {
+            // Bring existing activity to front
             focusIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-            activity.startActivity(focusIntent);
+            try {
+                activity.startActivity(focusIntent);
+            } catch (Exception e) {
+                Log.e(TAG, "[RNCallKeepModule] Failed to bring activity to foreground", e);
+            }
         } else {
-            focusIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK +
-                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED +
-                    WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD +
-                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
-
-            getReactApplicationContext().startActivity(focusIntent);
+            // Start activity from background (needs NEW_TASK)
+            try {
+                context.startActivity(focusIntent);
+            } catch (Exception e) {
+                Log.e(TAG, "[RNCallKeepModule] Failed to start activity from background", e);
+            }
         }
     }
 
