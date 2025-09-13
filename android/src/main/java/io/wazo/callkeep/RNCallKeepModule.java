@@ -436,7 +436,8 @@ public class RNCallKeepModule extends ReactContextBaseJavaModule implements Life
 
     @ReactMethod
     public void displayIncomingCallLite(String uuid, String handle, String localizedCallerName) {
-        this.displayIncomingCall(uuid, handle, localizedCallerName, "generic", false);
+        // Forward to the 3-arg version → which defaults to audio only
+        this.displayIncomingCall(uuid, handle, localizedCallerName);
     }
     
     @ReactMethod
